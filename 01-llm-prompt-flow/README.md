@@ -1,0 +1,437 @@
+# Post 01 — What Happens When You Send a Prompt to an LLM?
+
+This project is the hands-on implementation for **Post 01 of the AI Engineering Series**.
+
+The goal is simple:
+
+> Understand what happens between writing a prompt and receiving a response from an LLM.
+
+Instead of treating an LLM as a black box that simply does:
+
+```text
+Prompt → Answer
+```
+
+we break the basic flow into observable steps.
+
+---
+
+## 1. The Basic LLM Flow
+
+At a high level:
+
+```text
+User
+  │
+  │  Prompt
+  ▼
+Application
+  │
+  │  API Request
+  ▼
+LLM
+  │
+  │  Generates tokens
+  ▼
+Generated Tokens
+  │
+  │  Decoding
+  ▼
+Text Response
+  │
+  ▼
+User
+```
+
+For this project, the LLM inference is performed using the **Groq API**.
+
+---
+
+## 2. What This Project Demonstrates
+
+This project intentionally focuses on only two concepts:
+
+### 1. Tokenization
+
+How human-readable text is converted into tokens/token IDs that an LLM can process.
+
+```text
+"Hello world"
+       ↓
+Tokenizer
+       ↓
+[Token ID, Token ID, ...]
+```
+
+### 2. Basic LLM Inference
+
+How an application sends a user prompt to an LLM and receives the generated response.
+
+```text
+User Prompt
+     ↓
+Groq API
+     ↓
+LLM Inference
+     ↓
+Generated Response
+```
+
+That's it.
+
+This project does **not** cover streaming, RAG, agents, KV cache, context engineering, embeddings, or latency optimization. Those concepts will be covered separately in later parts of the series.
+
+---
+
+# 3. Project Structure
+
+```text
+01-llm-prompt-flow/
+│
+├── README.md
+├── POST-01.md
+├── requirements.txt
+├── .env.example
+├── .gitignore
+│
+├── src/
+│   ├── prompt_flow.py
+│   └── tokenizer_demo.py
+│
+└── outputs/
+    ├── post-01-explainer.png
+    └── post-01-hands-on-task.png
+```
+
+---
+
+# 4. `tokenizer_demo.py`
+
+This file demonstrates tokenization.
+
+It takes ordinary text:
+
+```text
+Explain how a large language model works.
+```
+
+and passes it through a tokenizer.
+
+Conceptually:
+
+```text
+Human-readable text
+        ↓
+     Tokenizer
+        ↓
+   Token IDs
+```
+
+The important idea is that an LLM does not directly process the sentence as human-readable text.
+
+It processes numerical representations of tokens.
+
+### Run it
+
+```bash
+python src/tokenizer_demo.py
+```
+
+### Important note
+
+The project uses `tiktoken` only to demonstrate the **concept of tokenization**.
+
+The tokenizer used by the local demonstration should not automatically be assumed to be the exact tokenizer used internally by the selected Groq model.
+
+Therefore, the output is presented as an **approximation for learning**, not as an exact representation of the provider's internal tokenization.
+
+---
+
+# 5. `prompt_flow.py`
+
+This file demonstrates the actual LLM request.
+
+The flow is:
+
+```text
+User Prompt
+     ↓
+Python Application
+     ↓
+Groq API
+     ↓
+LLM
+     ↓
+Generated Response
+```
+
+The important code is:
+
+```python
+response = client.chat.completions.create(
+    model=model,
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+)
+```
+
+Here:
+
+```python
+{"role": "user", "content": prompt}
+```
+
+represents the **user message**.
+
+It is **not a system prompt**.
+
+---
+
+# 6. User Prompt vs System Prompt
+
+This distinction becomes important when working with LLM APIs.
+
+A user message looks like:
+
+```python
+{
+    "role": "user",
+    "content": "Explain tokenization."
+}
+```
+
+A system message would look like:
+
+```python
+{
+    "role": "system",
+    "content": "You are an AI engineering tutor."
+}
+```
+
+This project intentionally uses only the `user` role.
+
+Why?
+
+Because the purpose of Post 01 is to understand the basic:
+
+```text
+Prompt → LLM → Response
+```
+
+flow.
+
+Introducing system prompts here would add another concept that isn't required for the objective of this post.
+
+---
+
+# 7. Setup
+
+## Create a virtual environment
+
+### Windows
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### Linux/macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+---
+
+## Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# 8. Configure Groq
+
+Copy:
+
+```text
+.env.example
+```
+
+to:
+
+```text
+.env
+```
+
+Add your Groq API key:
+
+```env
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=your_groq_model
+```
+
+The API key should remain local.
+
+**Never commit `.env` to GitHub.**
+
+The `.gitignore` file already excludes it.
+
+---
+
+# 9. Run the Project
+
+### Tokenization demonstration
+
+```bash
+python src/tokenizer_demo.py
+```
+
+### LLM inference
+
+```bash
+python src/prompt_flow.py
+```
+
+---
+
+# 10. What You Should Observe
+
+After running `tokenizer_demo.py`, you should see something conceptually similar to:
+
+```text
+Text:
+Explain how a large language model works.
+
+Token IDs:
+[...]
+
+Approximate token count:
+...
+```
+
+The exact token IDs and count depend on the tokenizer being used.
+
+After running `prompt_flow.py`, you should see:
+
+```text
+PROMPT:
+
+Explain what happens when a user sends
+a prompt to a large language model.
+
+RESPONSE:
+
+...
+```
+
+The response is generated by the selected Groq model.
+
+---
+
+# 11. The Main Learning
+
+The most important takeaway from this project is:
+
+An LLM application is not simply:
+
+```text
+Prompt → Answer
+```
+
+At a basic level, the application is doing something closer to:
+
+```text
+Text
+ ↓
+Tokenization
+ ↓
+Structured API request
+ ↓
+LLM inference
+ ↓
+Generated tokens
+ ↓
+Text response
+```
+
+The transformer computations happen inside the model.
+
+As an AI engineer, your application interacts with the model through an interface such as an API.
+
+Understanding this boundary becomes important when you later work with:
+
+- prompt engineering
+- context engineering
+- RAG
+- agents
+- token budgets
+- caching
+- KV cache
+- inference optimization
+- evaluation
+
+Those topics are intentionally **not implemented in this project**.
+
+---
+
+# 12. Why This Project Is Small
+
+This repository follows a simple principle:
+
+```text
+One Post
+   ↓
+One Core Concept
+   ↓
+One Small Implementation
+   ↓
+One GitHub Proof
+```
+
+The purpose isn't to build a complicated application.
+
+The purpose is to understand one concept deeply enough to explain it and demonstrate it with working code.
+
+---
+
+# 13. AI Engineering Series
+
+This repository is **Post 01** of the AI Engineering Series.
+
+Future projects will build on the concepts introduced here.
+
+```text
+01 — LLM Prompt Flow
+        ↓
+02 — Tokenization / Context
+        ↓
+03 — Context Engineering
+        ↓
+04 — Embeddings
+        ↓
+05 — Vector Search
+        ↓
+06 — RAG
+        ↓
+07 — Agentic Systems
+        ↓
+...
+```
+
+The exact topics may evolve as the series progresses.
+
+---
+
+## Author
+
+Built as part of a practical AI Engineering learning and implementation series.
+
+**Learn → Build → Measure → Explain**
